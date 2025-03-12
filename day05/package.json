@@ -1,0 +1,12 @@
+{
+  "name": "day05",
+  "version": "1.0.0",
+  "main": "sol.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types sol.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10"
+  }
+}
