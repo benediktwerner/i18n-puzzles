@@ -3,6 +3,7 @@
 from functools import cache
 import unicodedata
 import bcrypt
+import concurrent.futures
 
 
 @cache
@@ -21,15 +22,19 @@ def variations(s):
     return result
 
 
+def check_pwd(user, pwd):
+    return any(bcrypt_check(v, users[user]) for v in variations(pwd))
+
+
 with open("input.txt") as f:
     pwds, attempts = f.read().split("\n\n")
 
 
-result = 0
 users = {user: hash for user, hash in map(str.split, pwds.splitlines())}
 
-for user, pwd in map(str.split, attempts.splitlines()):
-    if any(bcrypt_check(v, users[user]) for v in variations(pwd)):
-        result += 1
-
-print(result)
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    futures = [
+        executor.submit(check_pwd, user, pwd)
+        for user, pwd in map(str.split, attempts.splitlines())
+    ]
+    print(sum(future.result() for future in futures))
