@@ -6,14 +6,9 @@ import bcrypt
 import concurrent.futures
 
 
-@cache
-def bcrypt_check(pwd, hash):
-    return bcrypt.checkpw(pwd.encode(), hash.encode())
-
-
-def variations(s):
+def variations(s: str) -> list[str]:
     result = [""]
-    for c in unicodedata.normalize("NFC", s):
+    for c in s:
         decomposed = unicodedata.normalize("NFD", c)
         if decomposed == c:
             result = [r + c for r in result]
@@ -22,15 +17,27 @@ def variations(s):
     return result
 
 
+@cache
+def bcrypt_check(pwd: str, hash: str) -> bool:
+    return bcrypt.checkpw(pwd.encode(), hash.encode())
+
+
 def check_pwd(user, pwd):
-    return any(bcrypt_check(v, users[user]) for v in variations(pwd))
+    pwd = unicodedata.normalize("NFC", pwd)
+    hash, opt = users[user]
+    if opt:
+        return pwd == hash
+    elif any(bcrypt_check(v, hash) for v in variations(pwd)):
+        users[user] = (pwd, True)
+        return True
+    return False
 
 
 with open("input.txt") as f:
     pwds, attempts = f.read().split("\n\n")
 
 
-users = {user: hash for user, hash in map(str.split, pwds.splitlines())}
+users = {user: (hash, False) for user, hash in map(str.split, pwds.splitlines())}
 
 with concurrent.futures.ThreadPoolExecutor() as executor:
     futures = [
